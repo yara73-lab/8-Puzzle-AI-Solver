@@ -13,6 +13,7 @@ class Heuristics:
             goal_x, goal_y = goal_pos[tile]
             res+=abs(state_x - goal_x) + abs(state_y - goal_y)
         return res
+    
     @staticmethod    
     def euclidean(state,goal_pos) -> float:
         res=0.0
