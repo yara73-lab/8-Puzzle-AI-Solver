@@ -1,3 +1,9 @@
+"""
+Reusable puzzle input and board display for Streamlit.
+
+Student 1's frontend component.
+"""
+
 import random
 
 import streamlit as st
@@ -77,7 +83,7 @@ def render_board(state):
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 10px;
-        max-width: 330px;
+        max-width: 240px;
         margin: 12px auto;
     }}
 
@@ -90,7 +96,7 @@ def render_board(state):
         background: #273449;
         color: #ffffff;
         border: 1px solid #46566e;
-        font-size: 32px;
+        font-size: 28px;
         font-weight: 700;
     }}
 

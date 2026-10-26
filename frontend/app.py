@@ -1,21 +1,3 @@
-"""
-Draft single-page Streamlit app for the 8-puzzle assignment.  (Student 2)
-
-Run from the PROJECT ROOT:
-    streamlit run frontend/app_draft.py
-
-When the team agrees, copy this file over frontend/app.py (this draft never
-touches app.py itself).
-
-One page:
-  1. choose / randomise a board          (frontend/board.py, Student 1)
-  2. choose ONE algorithm and press Solve
-  3. report data printed: path to goal, cost, nodes expanded, search depth,
-     running time, IDS iterations
-  4. step-by-step viewer                 (frontend/visualization.py)
-  5. "Solve with all" button -> comparison dashboard (frontend/dashboard.py)
-"""
-
 import sys
 from pathlib import Path
 
@@ -150,34 +132,48 @@ def render_report(result, iterations, state):
 
 
 def main():
-    st.set_page_config(page_title="8-Puzzle AI Solver", layout="centered")
+    st.set_page_config(page_title="8-Puzzle AI Solver", layout="wide")
     st.title("8-Puzzle AI Solver")
-    st.caption(
-               "Goal state: 0,1,2,3,4,5,6,7,8")
+    st.caption("Goal state: 0,1,2,3,4,5,6,7,8"  )
+               
 
-    state = render_puzzle_input(key="puzzle")
-    if state is None:                    # invalid or unsolvable input
+    # puzzle on the left, solving controls on the right, reports below
+    left, right = st.columns(2, gap="large")
+
+    with left.container(border=True):
+        state = render_puzzle_input(key="puzzle")
+
+    with right.container(border=True):
+        st.subheader("Algorithm")
+        if state is None:                # invalid or unsolvable input
+            st.info("Fix the board on the left to enable solving.")
+            solve_clicked = all_clicked = False
+        else:
+            solver = st.selectbox("Choose the search algorithm", SOLVERS,
+                                  key="s2_solver")
+
+            depth_limit = 5
+            if solver.startswith("DLS"):
+                depth_limit = int(st.number_input(
+                    "Depth limit", min_value=0, max_value=100, value=5,
+                    step=1, key="s2_limit"))
+
+            budget = int(st.number_input(
+                "Max node expansions for DFS / IDS / DLS (0 = unlimited)",
+                min_value=0, value=2_000_000, step=100_000, key="s2_budget",
+                help="Safety limit so a hard board cannot freeze the page. "
+                     "Reaching it gives status 'cutoff', not 'unsolvable'."))
+
+            solve_col, all_col = st.columns(2)
+            solve_clicked = solve_col.button(
+                "Solve", key="s2_solve", use_container_width=True)
+            all_clicked = all_col.button(
+                "Solve with all", key="s2_run_all", use_container_width=True)
+
+    if state is None:
         st.stop()
 
-    st.subheader("Algorithm")
-    solver = st.selectbox("Choose the search algorithm", SOLVERS,
-                          key="s2_solver")
-
-    depth_limit = 5
-    if solver.startswith("DLS"):
-        depth_limit = int(st.number_input(
-            "Depth limit", min_value=0, max_value=100, value=5, step=1,
-            key="s2_limit"))
-
-    budget = int(st.number_input(
-        "Max node expansions for DFS / IDS / DLS (0 = unlimited)",
-        min_value=0, value=2_000_000, step=100_000, key="s2_budget",
-        help="Safety limit so a hard board cannot freeze the page. "
-             "Reaching it gives status 'cutoff', not 'unsolvable'."))
-
-    solve_col, all_col = st.columns(2)
-
-    if solve_col.button("Solve", key="s2_solve", use_container_width=True):
+    if solve_clicked:
         with st.spinner(f"Running {solver}..."):
             result, iterations = run_solver(solver, state, depth_limit, budget)
         # Keep the result: every click on Next/Play reruns this whole script.
@@ -187,8 +183,7 @@ def main():
         st.session_state["s2_solver_used"] = solver
         st.session_state.pop("s2_all", None)
 
-    if all_col.button("Solve with all", key="s2_run_all",
-                      use_container_width=True):
+    if all_clicked:
         with st.spinner("Running all algorithms..."):
             results = [run_solver(name, state, depth_limit, budget)[0]
                        for name in SOLVERS[:5]]
@@ -201,9 +196,12 @@ def main():
         if shown_state != state:
             st.warning("The board changed since the last run - "
                        "press Solve to update the results.")
-        render_report(result, st.session_state.get("s2_iters"), shown_state)
-        st.subheader("Step-by-step viewer")
-        render_solution_viewer(result, key="s2_view", initial_state=shown_state)
+        with st.container(border=True):
+            render_report(result, st.session_state.get("s2_iters"), shown_state)
+        with st.container(border=True):
+            st.subheader("Step-by-step viewer")
+            render_solution_viewer(result, key="s2_view",
+                                   initial_state=shown_state)
 
     saved = st.session_state.get("s2_all")
     if saved is not None:
@@ -211,7 +209,8 @@ def main():
         if saved_state != state:
             st.warning("The board changed since the last run - "
                        "press Solve with all to update the dashboard.")
-        render_dashboard(results, saved_state)
+        with st.container(border=True):
+            render_dashboard(results, saved_state)
 
 
 if __name__ == "__main__":

@@ -62,7 +62,7 @@ def board_html(state, highlight_index=None, goal_reached=False):
     css = """
     <style>
     .s2-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px;
-               max-width:300px; margin:12px auto; padding:12px;
+               max-width:260px; margin:12px auto; padding:12px;
                border-radius:18px; border:2px solid transparent; }
     .s2-grid.s2-goal { border-color:#22c55e; background:rgba(34,197,94,0.10); }
     .s2-tile { aspect-ratio:1; display:flex; align-items:center;
@@ -183,7 +183,7 @@ def render_solution_viewer(result, key="viewer", initial_state=None,
     col_step, col_total, col_goal = st.columns(3)
     col_step.metric("Current step", f"{step} / {total_moves}")
     col_total.metric("Total moves", total_moves)
-    col_goal.metric("Goal reached", "Yes " if at_goal else "Not yet")
+    col_goal.metric("Goal reached", "Yes" if at_goal else "Not yet")
 
     # -- the board ---------------------------------------------------------
     highlight = moved_tile_index(path[step - 1], current) if step > 0 else None
