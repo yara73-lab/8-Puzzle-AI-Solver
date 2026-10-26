@@ -1,30 +1,3 @@
-"""
-Reusable Streamlit step-by-step viewer for a SearchResult.  (Student 2)
-
-Main entry point
-----------------
-    render_solution_viewer(result, key="viewer", initial_state=None)
-
-It works with ANY algorithm's SearchResult (BFS, DFS, DLS, IDS, A* once its
-output is converted).  It only reads: status, path, moves, path_cost,
-nodes_expanded, search_depth, running_time.
-
-Design notes
-------------
-* Every widget key is prefixed with ``key`` so several viewers (for example
-  one per algorithm tab) can live on the same page without clashing.
-* The current step lives in ``st.session_state[f"{key}_step"]``.  The slider,
-  Previous and Next all write to it, and the slider is re-synchronised from
-  it at the start of every run.  (Streamlit forbids changing a widget's
-  value after the widget was created, so the autoplay loop edits only the
-  canonical step and lets the next run update the slider.)
-* Autoplay = draw the current step, sleep, advance, rerun.  A click on
-  Pause interrupts the script and stops it, so it is reliable on every
-  Streamlit version that has ``st.rerun``/``st.experimental_rerun``.
-* CSS classes start with ``s2-`` so they cannot clash with the ``.puzzle-*``
-  classes used by frontend/board.py.
-"""
-
 import time
 
 import streamlit as st
@@ -34,6 +7,7 @@ from core.puzzle import GOAL_STATE
 # Direction of the BLANK for each move name, and the opposite direction that
 # the neighbouring TILE travels (a blank moving Up means a tile slides Down).
 _OPPOSITE = {"Up": "Down", "Down": "Up", "Left": "Right", "Right": "Left"}
+PLAY_DELAY = 0.8     # seconds per move while playing
 _ARROWS = {"Up": "⬆", "Down": "⬇", "Left": "⬅", "Right": "➡"}
 
 
@@ -169,7 +143,6 @@ def render_solution_viewer(result, key="viewer", initial_state=None,
     total_moves = len(path) - 1          # a path of N states has N-1 moves
 
     step_key = f"{key}_step"
-    slider_key = f"{key}_slider"
     play_key = f"{key}_playing"
     sig_key = f"{key}_sig"
 
@@ -182,8 +155,6 @@ def render_solution_viewer(result, key="viewer", initial_state=None,
 
     step = clamp_step(st.session_state.get(step_key, 0), total_moves)
     st.session_state[step_key] = step
-    # Safe: the slider widget has not been created yet in this run.
-    st.session_state[slider_key] = step
 
     # -- callbacks (run BEFORE the script reruns) ---------------------------
     def go_previous():
@@ -194,11 +165,6 @@ def render_solution_viewer(result, key="viewer", initial_state=None,
     def go_next():
         st.session_state[step_key] = clamp_step(
             st.session_state[step_key] + 1, total_moves)
-        st.session_state[play_key] = False
-
-    def slider_moved():
-        st.session_state[step_key] = clamp_step(
-            st.session_state[slider_key], total_moves)
         st.session_state[play_key] = False
 
     def toggle_play():
@@ -217,7 +183,7 @@ def render_solution_viewer(result, key="viewer", initial_state=None,
     col_step, col_total, col_goal = st.columns(3)
     col_step.metric("Current step", f"{step} / {total_moves}")
     col_total.metric("Total moves", total_moves)
-    col_goal.metric("Goal reached", "Yes ✅" if at_goal else "Not yet")
+    col_goal.metric("Goal reached", "Yes " if at_goal else "Not yet")
 
     # -- the board ---------------------------------------------------------
     highlight = moved_tile_index(path[step - 1], current) if step > 0 else None
@@ -241,25 +207,10 @@ def render_solution_viewer(result, key="viewer", initial_state=None,
             col_play.button("⏸ Pause" if playing else "▶ Play",
                             key=f"{key}_play", on_click=toggle_play)
 
-        # Slider only makes sense with at least 2 positions (min < max).
-        st.slider("Step", min_value=0, max_value=total_moves,
-                  key=slider_key, on_change=slider_moved)
-
-        if show_autoplay:
-            st.select_slider(
-                "Play speed (seconds per move)",
-                options=[0.2, 0.4, 0.6, 0.8, 1.0, 1.5, 2.0],
-                value=0.8, key=f"{key}_delay")
-
-    # -- full move list ----------------------------------------------------
-    if moves:
-        with st.expander("Full move sequence"):
-            st.write(" → ".join(f"{i}. {m}" for i, m in enumerate(moves, 1)))
-
     # -- autoplay: draw, wait, advance, rerun ------------------------------
     if playing and show_autoplay:
         if step < total_moves:
-            time.sleep(st.session_state.get(f"{key}_delay", 0.8))
+            time.sleep(PLAY_DELAY)
             st.session_state[step_key] = step + 1
             _rerun()
         else:
