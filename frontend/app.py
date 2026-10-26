@@ -11,9 +11,9 @@ One page:
   1. choose / randomise a board          (frontend/board.py, Student 1)
   2. choose ONE algorithm and press Solve
   3. report data printed: path to goal, cost, nodes expanded, search depth,
-     running time, IDS iterations, every step as text, downloadable trace
+     running time, IDS iterations
   4. step-by-step viewer                 (frontend/visualization.py)
-  5. optional "run ALL algorithms" comparison table (CSV download)
+  5. "Solve with all" button -> comparison dashboard (frontend/dashboard.py)
 """
 
 import sys
@@ -33,6 +33,7 @@ from algorithms.dls import dls
 from algorithms.ids import ids_with_iterations
 from core.metrics import SearchResult
 from frontend.board import render_puzzle_input
+from frontend.dashboard import render_dashboard
 from frontend.visualization import render_solution_viewer
 
 SOLVERS = [
@@ -43,32 +44,6 @@ SOLVERS = [
     "A* - Euclidean",
     "DLS (fixed depth limit)",
 ]
-
-# Data structure + short explanation of every algorithm (report material).
-# Keys equal SearchResult.algorithm.
-ALGORITHM_NOTES = {
-    "BFS": "Data structures: FIFO queue (collections.deque), visited set, "
-           "parent/move dictionaries. Expands the shallowest node first, so "
-           "with unit costs the first goal found is a shortest path.",
-    "DFS": "Data structures: LIFO stack (list), visited set, parent/move "
-           "dictionaries. Always expands the most recently generated node. "
-           "Memory-light in theory but NOT optimal: paths can be very long.",
-    "IDS": "Data structures: explicit stack of lazy child "
-           "iterators, current-path list and a path set (O(depth) memory). "
-           "Runs depth-limited DFS with limits 0, 1, 2, ... and sums the "
-           "work of all iterations. Complete and optimal for unit costs.",
-    "A* - Manhattan": "Data structures: min-heap (heapq) ordered by "
-           "f = g + h, best-g dictionary, parent dictionary, expanded set. "
-           "h = sum of tile row+column distances to the goal (admissible).",
-    "A* - Euclidean": "Same A* as above with h = sum of straight-line tile "
-           "distances to the goal. Admissible but never larger than "
-           "Manhattan, so it is less informed.",
-    "DLS": "Data structures: same as IDS, one iteration. "
-           "Returns success, cutoff (limit hid part of the tree) or failure.",
-}
-
-TRACE_DISPLAY_STEPS = 200        # steps printed on the page; full trace is downloadable
-
 
 # ---------------------------------------------------------------------------
 # Pure helpers (no Streamlit calls)
@@ -111,27 +86,6 @@ def run_solver(name, state, depth_limit=5, budget=0):
     if name.startswith("DLS"):
         return dls(state, depth_limit, max_expansions=budget), None
     raise ValueError(f"Unknown algorithm: {name}")
-
-
-def board_text(board):
-    """Three text lines for a board, blank shown as '_'."""
-    return [" ".join("_" if t == 0 else str(t) for t in board[r:r + 3])
-            for r in range(0, 9, 3)]
-
-
-def format_trace(result, max_steps=None):
-    """Every step as text (traceable output). max_steps=None prints all."""
-    lines = []
-    for i, board in enumerate(result.path):
-        if max_steps is not None and i > max_steps:
-            lines.append(f"... {len(result.path) - 1 - max_steps} more steps "
-                         "(download the full trace) ...")
-            break
-        lines.append("Start" if i == 0
-                     else f"Step {i}: blank moves {result.moves[i - 1]}")
-        lines.extend(board_text(board))
-        lines.append("")
-    return "\n".join(lines)
 
 
 def result_row(result):
@@ -194,57 +148,11 @@ def render_report(result, iterations, state):
             } for it in iterations]),
             hide_index=True)
 
-    with st.expander("Data structures and how this algorithm works"):
-        st.write(ALGORITHM_NOTES.get(result.algorithm, ""))
-
-    if result.path:
-        with st.expander("Traceable output - every step printed"):
-            st.code(format_trace(result, TRACE_DISPLAY_STEPS), language=None)
-        st.download_button("Download full step trace (.txt)",
-                           data=format_trace(result),
-                           file_name="trace.txt", mime="text/plain")
-
-
-def render_comparison(state, depth_limit, budget):
-    """Run every main algorithm on the same board and tabulate the results."""
-    st.subheader("Compare all algorithms on this board")
-    st.caption("BFS, DFS, IDS, A* Manhattan and A* Euclidean. "
-               "The expansion budget above applies to DFS and IDS.")
-
-    if st.button("Run all algorithms", key="s2_run_all"):
-        rows = []
-        with st.spinner("Running all algorithms..."):
-            for name in SOLVERS[:5]:
-                result, _ = run_solver(name, state, depth_limit, budget)
-                rows.append(result_row(result))
-        st.session_state["s2_compare"] = (state, pd.DataFrame(rows))
-
-    saved = st.session_state.get("s2_compare")
-    if saved is None:
-        return
-    saved_state, table = saved
-    st.caption(f"Board: {','.join(map(str, saved_state))}")
-    st.dataframe(table, hide_index=True)
-    st.download_button("Download comparison (.csv)",
-                       data=table.to_csv(index=False),
-                       file_name="comparison.csv", mime="text/csv")
-
-    # Manhattan vs Euclidean, as the assignment asks.
-    by_name = {row["Algorithm"]: row for row in table.to_dict("records")}
-    man, euc = by_name.get("A* - Manhattan"), by_name.get("A* - Euclidean")
-    if man and euc and man["Status"] == euc["Status"] == "success":
-        st.info(
-            f"Manhattan expanded {man['Nodes expanded']:,} nodes, Euclidean "
-            f"{euc['Nodes expanded']:,}; path costs {man['Path cost']} and "
-            f"{euc['Path cost']}. Both heuristics are admissible (Euclidean "
-            "is never larger than Manhattan), but Manhattan is more "
-            "informed, so it typically expands fewer nodes.")
-
 
 def main():
     st.set_page_config(page_title="8-Puzzle AI Solver", layout="centered")
     st.title("8-Puzzle AI Solver")
-    st.caption("Alexandria University - AI Assignment 1. "
+    st.caption(
                "Goal state: 0,1,2,3,4,5,6,7,8")
 
     state = render_puzzle_input(key="puzzle")
@@ -261,15 +169,15 @@ def main():
             "Depth limit", min_value=0, max_value=100, value=5, step=1,
             key="s2_limit"))
 
-    budget = 0
-    if solver in ("DFS", "DLS (fixed depth limit)") or solver.startswith("IDS"):
-        budget = int(st.number_input(
-            "Max node expansions (0 = unlimited)", min_value=0,
-            value=2_000_000, step=100_000, key="s2_budget",
-            help="Safety limit so a hard board cannot freeze the page. "
-                 "Reaching it gives status 'cutoff', not 'unsolvable'."))
+    budget = int(st.number_input(
+        "Max node expansions for DFS / IDS / DLS (0 = unlimited)",
+        min_value=0, value=2_000_000, step=100_000, key="s2_budget",
+        help="Safety limit so a hard board cannot freeze the page. "
+             "Reaching it gives status 'cutoff', not 'unsolvable'."))
 
-    if st.button("Solve", key="s2_solve"):
+    solve_col, all_col = st.columns(2)
+
+    if solve_col.button("Solve", key="s2_solve", use_container_width=True):
         with st.spinner(f"Running {solver}..."):
             result, iterations = run_solver(solver, state, depth_limit, budget)
         # Keep the result: every click on Next/Play reruns this whole script.
@@ -277,6 +185,15 @@ def main():
         st.session_state["s2_iters"] = iterations
         st.session_state["s2_state"] = state
         st.session_state["s2_solver_used"] = solver
+        st.session_state.pop("s2_all", None)
+
+    if all_col.button("Solve with all", key="s2_run_all",
+                      use_container_width=True):
+        with st.spinner("Running all algorithms..."):
+            results = [run_solver(name, state, depth_limit, budget)[0]
+                       for name in SOLVERS[:5]]
+        st.session_state["s2_all"] = (state, results)
+        st.session_state.pop("s2_result", None)
 
     result = st.session_state.get("s2_result")
     if result is not None:
@@ -288,8 +205,13 @@ def main():
         st.subheader("Step-by-step viewer")
         render_solution_viewer(result, key="s2_view", initial_state=shown_state)
 
-    st.divider()
-    render_comparison(state, depth_limit, budget)
+    saved = st.session_state.get("s2_all")
+    if saved is not None:
+        saved_state, results = saved
+        if saved_state != state:
+            st.warning("The board changed since the last run - "
+                       "press Solve with all to update the dashboard.")
+        render_dashboard(results, saved_state)
 
 
 if __name__ == "__main__":

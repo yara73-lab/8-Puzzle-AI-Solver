@@ -1,10 +1,3 @@
-
-"""
-Reusable puzzle input and board display for Streamlit.
-
-Student 1's frontend component.
-"""
-
 import random
 
 import streamlit as st
@@ -116,30 +109,60 @@ def render_board(state):
 
 def render_puzzle_input(key="puzzle"):
     """
-    Render puzzle input controls.
+    Render puzzle input controls (comma list OR one box per tile).
 
     Returns:
         Valid tuple state, or None for invalid input.
     """
     text_key = f"{key}_text"
+    mode_key = f"{key}_mode"
+    tile_keys = [f"{key}_tile{i}" for i in range(9)]
+
+    def set_board(state):
+        # keep both input styles in sync
+        st.session_state[text_key] = state_to_text(state)
+        for k, tile in zip(tile_keys, state):
+            st.session_state[k] = tile
 
     if text_key not in st.session_state:
-        st.session_state[text_key] = state_to_text(DEFAULT_STATE)
+        set_board(DEFAULT_STATE)
 
     def reset_board():
-        st.session_state[text_key] = state_to_text(DEFAULT_STATE)
+        set_board(DEFAULT_STATE)
 
     def randomize_board():
-        state = random_solvable_state()
-        st.session_state[text_key] = state_to_text(state)
+        set_board(random_solvable_state())
+
+    def mode_changed():
+        # carry the board over when the person switches input style
+        if st.session_state[mode_key] == "One by one":
+            try:
+                set_board(parse_state(st.session_state[text_key]))
+            except ValueError:
+                pass
+        else:
+            st.session_state[text_key] = state_to_text(
+                [st.session_state[k] for k in tile_keys])
 
     st.subheader("Puzzle Configuration")
 
-    st.text_input(
-        "Enter the nine tiles (0 represents the blank)",
-        key=text_key,
-        help="Example: 1,2,5,3,4,0,6,7,8",
-    )
+    mode = st.radio("Input style", ["List", "One by one"], key=mode_key,
+                    horizontal=True, on_change=mode_changed)
+
+    if mode == "List":
+        st.text_input(
+            "Enter the nine tiles (0 represents the blank)",
+            key=text_key,
+            help="Example: 1,2,5,3,4,0,6,7,8",
+        )
+    else:
+        st.caption("Enter the tiles row by row (0 represents the blank)")
+        for r in range(3):
+            cols = st.columns(3)
+            for c in range(3):
+                i = r * 3 + c
+                cols[c].number_input(f"Row {r + 1}, col {c + 1}", 0, 8,
+                                     key=tile_keys[i], step=1)
 
     col1, col2 = st.columns(2)
 
@@ -160,7 +183,11 @@ def render_puzzle_input(key="puzzle"):
         )
 
     try:
-        state = parse_state(st.session_state[text_key])
+        if mode == "List":
+            state = parse_state(st.session_state[text_key])
+        else:
+            state = validate_state(tuple(
+                int(st.session_state[k]) for k in tile_keys))
     except ValueError as exc:
         st.error(str(exc))
         return None
@@ -172,6 +199,7 @@ def render_puzzle_input(key="puzzle"):
         )
         return None
 
+    st.write("Current state:")
     render_board(state)
 
     return state
