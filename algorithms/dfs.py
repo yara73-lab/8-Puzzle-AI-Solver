@@ -29,8 +29,11 @@ def dfs(initial_state, max_expansions=None):
     start_time = perf_counter()
     initial_state = validate_state(initial_state)
 
-    if max_expansions is not None and max_expansions < 0:
-        raise ValueError("max_expansions must be non-negative.")
+    if max_expansions is not None:
+     if type(max_expansions) is not int or max_expansions < 0:
+        raise ValueError(
+            "max_expansions must be a non-negative integer or None."
+        )
 
     if not is_solvable(initial_state):
         return SearchResult(

@@ -42,8 +42,8 @@ def get_neighbors(state):
     """
     state = validate_state(state)
 
-    zero_index = state.index(0)
-    row, col = divmod(zero_index, 3)
+    zero_index = state.index(0)     #index of blank tile
+    row, col = divmod(zero_index, 3)    #row w col of blank tile
 
     directions = (
         ("Up", -1, 0),
@@ -54,7 +54,7 @@ def get_neighbors(state):
 
     neighbors = []
 
-    for move, dr, dc in directions:
+    for move, dr, dc in directions:     # try all moves(up,down, left,right)
         new_row = row + dr
         new_col = col + dc
 
@@ -64,7 +64,7 @@ def get_neighbors(state):
 
             new_state = list(state)
 
-            new_state[zero_index], new_state[new_index] = (
+            new_state[zero_index], new_state[new_index] = (     #switch blank with element
                 new_state[new_index],
                 new_state[zero_index],
             )
@@ -83,9 +83,11 @@ def is_solvable(state):
     """
     state = validate_state(state)
 
-    tiles = [tile for tile in state if tile != 0]
+    tiles = [tile for tile in state if tile != 0]       # ignore 0
 
     inversions = 0
+    # ex: (1,3,2) : (2,3) inversion pair
+
 
     for i in range(len(tiles)):
         for j in range(i + 1, len(tiles)):

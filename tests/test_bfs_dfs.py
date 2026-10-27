@@ -6,6 +6,8 @@ Tests for BFS and DFS search algorithms.
 from algorithms.bfs import bfs
 from algorithms.dfs import dfs
 from core.puzzle import GOAL_STATE, get_neighbors
+import pytest
+
 
 
 def assert_valid_solution(initial_state, result):
@@ -90,3 +92,8 @@ def test_dfs_cutoff():
     assert result.status == "cutoff"
     assert not result.solved
     assert result.nodes_expanded == 0
+
+@pytest.mark.parametrize("limit", [-1, 1.5, True, "3", float("nan")])
+def test_dfs_invalid_expansion_limit(limit):
+    with pytest.raises(ValueError):
+        dfs(GOAL_STATE, max_expansions=limit)
