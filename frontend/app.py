@@ -69,25 +69,6 @@ def run_solver(name, state, depth_limit=5, budget=0):
     raise ValueError(f"Unknown algorithm: {name}")
 
 
-def result_row(result):
-    def show(value):
-        return "-" if value is None else value      # None becomes '-' so columns stay integers
-
-    if len(result.moves) <= 30:
-        moves = " ".join(result.moves) if result.moves else "-"
-    else:
-        moves = f"{len(result.moves)} moves"
-    return {
-        "Algorithm": result.algorithm,
-        "Status": result.status,
-        "Path cost": show(result.path_cost),
-        "Nodes expanded": result.nodes_expanded,
-        "Search depth": show(result.search_depth),
-        "Time (s)": round(result.running_time, 6),
-        "Moves": moves,
-    }
-
-
 # ---------------------------------------------------------------------------
 # Page sections
 # ---------------------------------------------------------------------------
