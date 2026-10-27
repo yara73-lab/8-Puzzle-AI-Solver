@@ -1,7 +1,5 @@
 """
-Tests for Depth-Limited Search (DLS) and Iterative Deepening Search (IDS).
-(Student 2)
-
+Tests for Depth-Limited Search (DLS) and Iterative Deepening Search (IDS)
 Run from the project root:
     python -m pytest tests/test_dls_ids.py -v
 """

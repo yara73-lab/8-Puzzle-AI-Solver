@@ -1,8 +1,8 @@
 import sys
 from pathlib import Path
 
-# `streamlit run frontend/...` puts frontend/ on sys.path, not the project
-# root, so core/ and algorithms/ would not be importable without this.
+# `streamlit run frontend/app.py` 
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pandas as pd
@@ -50,7 +50,6 @@ def astar_to_result(raw, label):
 def run_solver(name, state, depth_limit=5, budget=0):
     """
     Run one algorithm.
-
     budget: maximum node expansions, 0 means unlimited.
     Returns (SearchResult, IDS iteration records or None).
     """
@@ -71,9 +70,8 @@ def run_solver(name, state, depth_limit=5, budget=0):
 
 
 def result_row(result):
-    """One comparison-table row. None becomes '-' so columns stay integers."""
     def show(value):
-        return "-" if value is None else value
+        return "-" if value is None else value      # None becomes '-' so columns stay integers
 
     if len(result.moves) <= 30:
         moves = " ".join(result.moves) if result.moves else "-"
@@ -95,7 +93,7 @@ def result_row(result):
 # ---------------------------------------------------------------------------
 
 def render_report(result, iterations, state):
-    """Print every item the assignment asks for."""
+    """Print every item"""
     st.subheader(f"Report data - {result.algorithm}")
     st.caption(f"Initial state: {','.join(map(str, state))}")
 
@@ -136,7 +134,6 @@ def main():
     st.title("8-Puzzle AI Solver")
     st.caption("Goal state: 0,1,2,3,4,5,6,7,8"  )
                
-
     # puzzle on the left, solving controls on the right, reports below
     left, right = st.columns(2, gap="large")
 

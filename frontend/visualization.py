@@ -12,18 +12,15 @@ _ARROWS = {"Up": "⬆", "Down": "⬇", "Left": "⬅", "Right": "➡"}
 
 
 # ---------------------------------------------------------------------------
-# Pure helpers (no Streamlit calls -> easy to test)
+# Pure helpers (no Streamlit calls)
 # ---------------------------------------------------------------------------
 
 def clamp_step(step, total_moves):
-    """Keep a step index inside 0 .. total_moves."""
     return max(0, min(int(step), max(int(total_moves), 0)))
 
 
 def moved_tile_index(previous_state, current_state):
     """
-    Board index of the tile that moved between two consecutive states.
-
     The tile that moved now sits where the blank used to be, so it is the
     value of ``current_state`` at the blank's index in ``previous_state``.
     """
@@ -42,8 +39,6 @@ def describe_move(previous_state, current_state, move):
 
 def board_html(state, highlight_index=None, goal_reached=False):
     """
-    HTML for one 3x3 board.
-
     highlight_index: board index (0-8) of the tile that just moved.
     goal_reached:    tint the board green when it is the final goal state.
     """

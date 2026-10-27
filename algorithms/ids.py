@@ -1,29 +1,8 @@
 """
-Iterative Deepening Search (IDS) for the 8-puzzle.  (Student 2)
-
+Iterative Deepening Search (IDS) for the 8-puzzle.  
 IDS runs Depth-Limited Search with limits 0, 1, 2, ... until a goal appears.
 It combines DFS's small memory (O(depth)) with BFS's optimality: with unit
 move costs the first limit that succeeds equals the shortest solution length.
-
-IDS does NOT re-implement the search: every iteration calls dls() from
-algorithms/dls.py.  Each call builds its own path set, so path-based
-"visited" information is reset at every iteration automatically.
-
-Definitions (same as dls.py)
-----------------------------
-* nodes_expanded : SUM over all iterations (re-expansion of shallow nodes in
-                   later iterations is counted -- that is the real cost).
-* running_time   : SUM of the running times of all dls() calls.
-* search_depth   : depth of the goal found == path_cost == the winning limit.
-
-Status handling
----------------
-* "success" : solution found (optimal number of moves).
-* "failure" : proven unsolvable (or a DLS iteration was exhausted without
-              hitting its limit).  Never produced just because a limit ended.
-* "cutoff"  : max_depth (or max_expansions) was reached first.  The puzzle
-              may still be solvable -- the caller must NOT treat this as
-              "unsolvable".
 """
 
 from dataclasses import dataclass
@@ -33,9 +12,8 @@ from core.puzzle import validate_state, is_solvable
 from core.metrics import SearchResult
 from algorithms.dls import dls, _validate_limit, _validate_budget
 
-# The hardest 8-puzzle positions need exactly 31 moves, so every solvable
-# board is solved by depth 31.  Using it as the default max_depth means a
-# "cutoff" can only appear if the caller deliberately chose a smaller value.
+# The hardest 8-puzzle positions need exactly 31 moves, so every solvable board is solved by depth 31. 
+# Using it as the default max_depth means a "cutoff" can only appear if the caller deliberately chose a smaller value.
 DEFAULT_MAX_DEPTH = 31
 
 
@@ -51,14 +29,6 @@ class IterationRecord:
 def ids_with_iterations(initial_state, max_depth=DEFAULT_MAX_DEPTH,
                         max_expansions=None):
     """
-    Run IDS and also return the per-iteration statistics.
-
-    Args:
-        initial_state:  9 tiles (tuple or list), 0 = blank.
-        max_depth:      last depth limit to try (inclusive).
-        max_expansions: optional budget for the TOTAL expansions of all
-                        iterations; exceeding it gives "cutoff".
-
     Returns:
         (SearchResult with algorithm "IDS", list[IterationRecord])
     """
@@ -131,6 +101,5 @@ def ids_with_iterations(initial_state, max_depth=DEFAULT_MAX_DEPTH,
 
 
 def ids(initial_state, max_depth=DEFAULT_MAX_DEPTH, max_expansions=None):
-    """Solve the 8-puzzle with Iterative Deepening Search (SearchResult)."""
     result, _ = ids_with_iterations(initial_state, max_depth, max_expansions)
     return result

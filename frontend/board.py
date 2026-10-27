@@ -1,7 +1,6 @@
 """
 Reusable puzzle input and board display for Streamlit.
 
-Student 1's frontend component.
 """
 
 import random

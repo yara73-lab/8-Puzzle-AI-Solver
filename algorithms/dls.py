@@ -1,36 +1,6 @@
 """
-Depth-Limited Search (DLS) for the 8-puzzle.  (Student 2)
-
-DLS is depth-first search that refuses to go deeper than ``depth_limit``.
-It is the building block of Iterative Deepening Search (see ids.py).
-
-Definitions used throughout this project
-----------------------------------------
-* depth of a node      : number of moves from the initial state. Root = 0.
-* nodes_expanded       : number of NON-GOAL nodes whose successors were
-                         generated.  A node sitting exactly at the depth
-                         limit is NOT expanded, and the goal is never counted
-                         (same convention as the BFS/DFS in this repo, so the
-                         numbers are comparable).
-* search_depth         : depth of the goal that was found (== path_cost).
-                         It is None when no solution is returned.
-
-Three possible outcomes (``SearchResult.status``)
--------------------------------------------------
-* "success" : a goal was found within the limit.
-* "cutoff"  : the limit (or the optional expansion budget) stopped the search
-              while some branches were still unexplored.  A solution MAY exist
-              deeper.  This is NOT a proof of unsolvability.
-* "failure" : the search space inside the limit was exhausted WITHOUT being
-              cut by the limit, or the puzzle is unsolvable.  No solution
-              exists at any depth.
-
-Cycle prevention
-----------------
-Only states on the CURRENT path (root -> current node) are forbidden, not
-every state ever seen.  This keeps memory at O(depth) and, unlike a global
-visited set, it never hides a shorter route to a state that was first reached
-by a long route -- which is what makes IDS return an optimal-depth answer.
+Depth-Limited Search (DLS) for the 8-puzzle.  
+It is the building block of IDS
 """
 
 from time import perf_counter
@@ -45,13 +15,11 @@ from core.metrics import SearchResult
 
 
 def _validate_limit(depth_limit):
-    """Depth limits must be non-negative integers (bool is rejected)."""
     if type(depth_limit) is not int or depth_limit < 0:
         raise ValueError("depth_limit must be a non-negative integer.")
 
 
 def _validate_budget(max_expansions):
-    """The optional expansion budget must be None or a non-negative int."""
     if max_expansions is not None and (
         type(max_expansions) is not int or max_expansions < 0
     ):
@@ -61,18 +29,11 @@ def _validate_budget(max_expansions):
 def _dls_core(start, depth_limit, successors=get_neighbors,
               goal_test=is_goal, max_expansions=None):
     """
-    Generic depth-limited DFS using an explicit stack (no recursion, so a
-    large depth_limit can never hit Python's recursion limit).
-
-    ``successors`` and ``goal_test`` are parameters only so the three-way
-    success / cutoff / failure logic can be unit-tested on tiny hand-made
-    graphs.  dls() always uses the real puzzle functions.
-
+    Generic depth-limited DFS using an explicit stack 
     Returns:
         (status, path, moves, nodes_expanded)
     """
-    # The goal test is applied to a node as soon as it is reached; it is
-    # never counted as expanded.
+    # The goal test is applied to a node as soon as it is reached; it is never counted as expanded.
     if goal_test(start):
         return "success", [start], [], 0
 
@@ -137,18 +98,10 @@ def _dls_core(start, depth_limit, successors=get_neighbors,
 
 def dls(initial_state, depth_limit, max_expansions=None):
     """
-    Solve the 8-puzzle with Depth-Limited Search.
-
-    Args:
-        initial_state:  9 tiles (tuple or list), 0 = blank.
-        depth_limit:    maximum depth (number of moves) that may be reached.
-        max_expansions: optional safety budget; exceeding it gives "cutoff".
-
-    Returns:
-        SearchResult with algorithm "DLS".
-        On success: path, moves, path_cost, search_depth are filled in.
-        On cutoff / failure: path and moves are empty and path_cost and
-        search_depth are None.
+    Depth-limited search for the 8-puzzle:
+    Returns a SearchResult object with the following fields:
+        algorithm, status, path, moves, path_cost, nodes_expanded,
+        search_depth, running_time
     """
     start_time = perf_counter()
     initial_state = validate_state(initial_state)
