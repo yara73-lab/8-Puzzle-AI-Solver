@@ -19,7 +19,7 @@ from core.metrics import SearchResult
 
 
 def bfs(initial_state):
-    """Solve the 8-puzzle using Breadth-First Search."""
+    """Solve the 8-puzzle using BFS"""
 
     start_time = perf_counter()
     initial_state = validate_state(initial_state)
@@ -31,7 +31,7 @@ def bfs(initial_state):
             running_time=perf_counter() - start_time,
         )
 
-    # Queue stores states waiting to be explored.
+    # Queue stores states waiting to be expanded.
     frontier = deque([initial_state])
 
     # Mark states visited when they enter the queue.
@@ -51,7 +51,7 @@ def bfs(initial_state):
             path = []
             moves = []
 
-            state = current
+            state = current     # state is the goal node awel ma nod5ol hena
 
             # Trace backward from goal to initial state.
             while state is not None:
@@ -62,7 +62,7 @@ def bfs(initial_state):
 
                 state = parent[state]
 
-            # Reverse to obtain initial -> goal order.
+            # Reverse to obtain initial -> goal order
             path.reverse()
             moves.reverse()
 
@@ -77,7 +77,7 @@ def bfs(initial_state):
                 running_time=perf_counter() - start_time,
             )
 
-        # Expanding means generating the current state's successors.
+        # if not goal :Expand current node  (generate the current state's successors)
         nodes_expanded += 1
 
         for move, neighbor in get_neighbors(current):

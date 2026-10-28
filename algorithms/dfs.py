@@ -42,7 +42,7 @@ def dfs(initial_state, max_expansions=None):
             running_time=perf_counter() - start_time,
         )
 
-    # LIFO stack: last state added is explored first.
+    # LIFO stack: last state added is explored first
     frontier = [initial_state]
 
     visited = {initial_state}
@@ -54,7 +54,7 @@ def dfs(initial_state, max_expansions=None):
     while frontier:
         current = frontier.pop()
 
-        if is_goal(current):
+        if is_goal(current):    # Reconstruct path and return success
             path = []
             moves = []
             state = current
